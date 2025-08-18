@@ -13,6 +13,7 @@ interface UseLayercodePipelineOptions {
   onDisconnect?: () => void;
   onError?: (error: Error) => void;
   onDataMessage?: (data: any) => void;
+  onMuteStateChange?: (isMuted: boolean) => void;
 }
 
 /**
@@ -26,11 +27,12 @@ const useLayercodePipeline = (
   options: UseLayercodePipelineOptions & Record<string, any>
 ) => {
   // Extract public options
-  const { pipelineId, sessionId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage } = options;
+  const { pipelineId, sessionId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage, onMuteStateChange } = options;
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
   const [agentAudioAmplitude, setAgentAudioAmplitude] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
   // Reference to the LayercodeClient instance
   const clientRef = useRef<LayercodeClient | null>(null);
 
@@ -64,12 +66,19 @@ const useLayercodePipeline = (
       onAgentAmplitudeChange: (amplitude: number) => {
         setAgentAudioAmplitude(amplitude);
       },
+      onMuteStateChange: (muted: boolean) => {
+        setIsMuted(muted);
+        onMuteStateChange?.(muted);
+      },
     });
 
     // Pass the override websocket URL if provided. Use for local development.
     if (options['_websocketUrl']) {
       clientRef.current._websocketUrl = options['_websocketUrl'];
     }
+
+    // Set initial mute state from JS SDK
+    setIsMuted(clientRef.current.isMuted);
 
     // Connect to the pipeline
     clientRef.current.connect().catch((error: Error) => {
@@ -87,10 +96,14 @@ const useLayercodePipeline = (
   }, [pipelineId, sessionId, authorizeSessionEndpoint]); // Make sure metadata isn't causing unnecessary re-renders if it changes often
 
   // Class methods
-  // TODO: Mic mute
-  // const setMuteMic = useCallback((mute: boolean) => {
-  //   // clientRef.current?.setMuteMic(mute);
-  // }, []);
+  const mute = useCallback(() => {
+    clientRef.current?.mute();
+  }, []);
+
+  const unmute = useCallback(() => {
+    clientRef.current?.unmute();
+  }, []);
+
   const triggerUserTurnStarted = useCallback(() => {
     clientRef.current?.triggerUserTurnStarted();
   }, []);
@@ -111,11 +124,14 @@ const useLayercodePipeline = (
     triggerUserTurnFinished,
     connect,
     disconnect,
+    mute,
+    unmute,
 
     // State
     status,
     userAudioAmplitude,
     agentAudioAmplitude,
+    isMuted,
   };
 };
 
