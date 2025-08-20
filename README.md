@@ -1,6 +1,6 @@
 # Layercode React SDK
 
-A React SDK for integrating Layercode audio pipelines into React applications.
+A React SDK for integrating Layercode audio agents into React applications.
 
 ## Installation
 
