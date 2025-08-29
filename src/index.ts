@@ -6,10 +6,10 @@ import LayercodeClient from '@layercode/js-sdk';
  */
 interface UseLayercodeAgentOptions {
   agentId: string;
-  sessionId?: string;
+  conversationId?: string;
   authorizeSessionEndpoint: string;
   metadata?: Record<string, any>;
-  onConnect?: ({ sessionId }: { sessionId: string | null }) => void;
+  onConnect?: ({ conversationId }: { conversationId: string | null }) => void;
   onDisconnect?: () => void;
   onError?: (error: Error) => void;
   onDataMessage?: (data: any) => void;
@@ -26,7 +26,7 @@ const useLayercodeAgent = (
   options: UseLayercodeAgentOptions & Record<string, any>
 ) => {
   // Extract public options
-  const { agentId, sessionId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage } = options;
+  const { agentId, conversationId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage } = options;
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
@@ -40,11 +40,11 @@ const useLayercodeAgent = (
     console.log('Creating LayercodeClient instance');
     clientRef.current = new LayercodeClient({
       agentId,
-      sessionId,
+      conversationId,
       authorizeSessionEndpoint,
       metadata,
-      onConnect: ({ sessionId }: { sessionId: string | null }) => {
-        onConnect?.({ sessionId });
+      onConnect: ({ conversationId }: { conversationId: string | null }) => {
+        onConnect?.({ conversationId });
       },
       onDisconnect: () => {
         onDisconnect?.();
@@ -84,7 +84,7 @@ const useLayercodeAgent = (
       }
     };
     // Add the internal override URL to the dependency array
-  }, [agentId, sessionId, authorizeSessionEndpoint]); // Make sure metadata isn't causing unnecessary re-renders if it changes often
+  }, [agentId, conversationId, authorizeSessionEndpoint]); // Make sure metadata isn't causing unnecessary re-renders if it changes often
 
   // Class methods
   // TODO: Mic mute
