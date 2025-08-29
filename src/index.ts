@@ -2,31 +2,31 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import LayercodeClient from '@layercode/js-sdk';
 
 /**
- * Configuration options for the useLayercodePipeline hook.
+ * Configuration options for the useLayercodeAgent hook.
  */
-interface UseLayercodePipelineOptions {
-  pipelineId: string;
-  sessionId?: string;
+interface UseLayercodeAgentOptions {
+  agentId: string;
+  conversationId?: string;
   authorizeSessionEndpoint: string;
   metadata?: Record<string, any>;
-  onConnect?: ({ sessionId }: { sessionId: string | null }) => void;
+  onConnect?: ({ conversationId }: { conversationId: string | null }) => void;
   onDisconnect?: () => void;
   onError?: (error: Error) => void;
   onDataMessage?: (data: any) => void;
 }
 
 /**
- * Hook for connecting to a Layercode pipeline in a React application
+ * Hook for connecting to a Layercode agent in a React application
  *
- * @param options - Configuration options for the pipeline
- * @returns An object containing methods and state for interacting with the pipeline
+ * @param options - Configuration options for the agent
+ * @returns An object containing methods and state for interacting with the agent
  */
-const useLayercodePipeline = (
+const useLayercodeAgent = (
   // Accept the public options plus any other properties (for internal use)
-  options: UseLayercodePipelineOptions & Record<string, any>
+  options: UseLayercodeAgentOptions & Record<string, any>
 ) => {
   // Extract public options
-  const { pipelineId, sessionId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage } = options;
+  const { agentId, conversationId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage } = options;
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
@@ -39,12 +39,12 @@ const useLayercodePipeline = (
     // Create a new LayercodeClient instance
     console.log('Creating LayercodeClient instance');
     clientRef.current = new LayercodeClient({
-      pipelineId,
-      sessionId,
+      agentId,
+      conversationId,
       authorizeSessionEndpoint,
       metadata,
-      onConnect: ({ sessionId }: { sessionId: string | null }) => {
-        onConnect?.({ sessionId });
+      onConnect: ({ conversationId }: { conversationId: string | null }) => {
+        onConnect?.({ conversationId });
       },
       onDisconnect: () => {
         onDisconnect?.();
@@ -71,9 +71,9 @@ const useLayercodePipeline = (
       clientRef.current._websocketUrl = options['_websocketUrl'];
     }
 
-    // Connect to the pipeline
+    // Connect to the agent
     clientRef.current.connect().catch((error: Error) => {
-      console.error('Failed to connect to pipeline:', error);
+      console.error('Failed to connect to agent:', error);
       onError?.(error);
     });
 
@@ -84,7 +84,7 @@ const useLayercodePipeline = (
       }
     };
     // Add the internal override URL to the dependency array
-  }, [pipelineId, sessionId, authorizeSessionEndpoint]); // Make sure metadata isn't causing unnecessary re-renders if it changes often
+  }, [agentId, conversationId, authorizeSessionEndpoint]); // Make sure metadata isn't causing unnecessary re-renders if it changes often
 
   // Class methods
   // TODO: Mic mute
@@ -119,4 +119,4 @@ const useLayercodePipeline = (
   };
 };
 
-export { useLayercodePipeline, UseLayercodePipelineOptions }; // Export the type too
+export { useLayercodeAgent, UseLayercodeAgentOptions }; // Export the type too
