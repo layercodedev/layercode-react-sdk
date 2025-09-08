@@ -13,6 +13,7 @@ interface UseLayercodeAgentOptions {
   onDisconnect?: () => void;
   onError?: (error: Error) => void;
   onDataMessage?: (data: any) => void;
+  onMessage?: (data: any) => void;
 }
 
 /**
@@ -26,7 +27,7 @@ const useLayercodeAgent = (
   options: UseLayercodeAgentOptions & Record<string, any>
 ) => {
   // Extract public options
-  const { agentId, conversationId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage } = options;
+  const { agentId, conversationId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage, onMessage } = options;
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
@@ -54,6 +55,9 @@ const useLayercodeAgent = (
       },
       onDataMessage: (data: any) => {
         onDataMessage?.(data);
+      },
+      onMessage: (data: any) => {
+        onMessage?.(data);
       },
       onStatusChange: (newStatus: string) => {
         setStatus(newStatus);
