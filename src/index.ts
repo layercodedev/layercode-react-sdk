@@ -13,6 +13,7 @@ interface UseLayercodeAgentOptions {
   onDisconnect?: () => void;
   onError?: (error: Error) => void;
   onDataMessage?: (data: any) => void;
+  onMuteStateChange?: (isMuted: boolean) => void;
   onMessage?: (data: any) => void;
 }
 
@@ -27,11 +28,12 @@ const useLayercodeAgent = (
   options: UseLayercodeAgentOptions & Record<string, any>
 ) => {
   // Extract public options
-  const { agentId, conversationId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage, onMessage } = options;
+  const { agentId, conversationId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage, onMessage, onMuteStateChange } = options;
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
   const [agentAudioAmplitude, setAgentAudioAmplitude] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
   // Reference to the LayercodeClient instance
   const clientRef = useRef<LayercodeClient | null>(null);
 
@@ -68,6 +70,10 @@ const useLayercodeAgent = (
       onAgentAmplitudeChange: (amplitude: number) => {
         setAgentAudioAmplitude(amplitude);
       },
+      onMuteStateChange: (muted: boolean) => {
+        setIsMuted(muted);
+        onMuteStateChange?.(muted);
+      },
     });
 
     // Pass the override websocket URL if provided. Use for local development.
@@ -75,6 +81,9 @@ const useLayercodeAgent = (
       clientRef.current._websocketUrl = options['_websocketUrl'];
     }
 
+    // Set initial mute state from JS SDK
+    setIsMuted(clientRef.current.isMuted);
+    
     // Connect to the agent
     clientRef.current.connect().catch((error: Error) => {
       console.error('Failed to connect to agent:', error);
@@ -91,10 +100,14 @@ const useLayercodeAgent = (
   }, [agentId, conversationId, authorizeSessionEndpoint]); // Make sure metadata isn't causing unnecessary re-renders if it changes often
 
   // Class methods
-  // TODO: Mic mute
-  // const setMuteMic = useCallback((mute: boolean) => {
-  //   // clientRef.current?.setMuteMic(mute);
-  // }, []);
+  const mute = useCallback(() => {
+    clientRef.current?.mute();
+  }, []);
+
+  const unmute = useCallback(() => {
+    clientRef.current?.unmute();
+  }, []);
+
   const triggerUserTurnStarted = useCallback(() => {
     clientRef.current?.triggerUserTurnStarted();
   }, []);
@@ -115,11 +128,14 @@ const useLayercodeAgent = (
     triggerUserTurnFinished,
     connect,
     disconnect,
+    mute,
+    unmute,
 
     // State
     status,
     userAudioAmplitude,
     agentAudioAmplitude,
+    isMuted,
   };
 };
 
