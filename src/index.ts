@@ -29,75 +29,89 @@ const useLayercodeAgent = (
 ) => {
   // Extract public options
   const { agentId, conversationId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage, onMessage, onMuteStateChange } = options;
+  const websocketUrlOverride = options['_websocketUrl'];
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
   const [agentAudioAmplitude, setAgentAudioAmplitude] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [internalConversationId, setInternalConversationId] = useState<string | null | undefined>(conversationId);
+  const conversationIdRef = useRef<string | undefined>(conversationId);
   // Reference to the LayercodeClient instance
   const clientRef = useRef<LayercodeClient | null>(null);
 
-  // Initialize the client on component mount
   useEffect(() => {
-    // Create a new LayercodeClient instance
-    console.log('Creating LayercodeClient instance');
-    clientRef.current = new LayercodeClient({
-      agentId,
-      conversationId,
-      authorizeSessionEndpoint,
-      metadata,
-      onConnect: ({ conversationId }: { conversationId: string | null }) => {
-        onConnect?.({ conversationId });
-      },
-      onDisconnect: () => {
-        onDisconnect?.();
-      },
-      onError: (error: Error) => {
-        onError?.(error);
-      },
-      onDataMessage: (data: any) => {
-        onDataMessage?.(data);
-      },
-      onMessage: (data: any) => {
-        onMessage?.(data);
-      },
-      onStatusChange: (newStatus: string) => {
-        setStatus(newStatus);
-      },
-      onUserAmplitudeChange: (amplitude: number) => {
-        setUserAudioAmplitude(amplitude);
-      },
-      onAgentAmplitudeChange: (amplitude: number) => {
-        setAgentAudioAmplitude(amplitude);
-      },
-      onMuteStateChange: (muted: boolean) => {
-        setIsMuted(muted);
-        onMuteStateChange?.(muted);
-      },
-    });
-
-    // Pass the override websocket URL if provided. Use for local development.
-    if (options['_websocketUrl']) {
-      clientRef.current._websocketUrl = options['_websocketUrl'];
+    conversationIdRef.current = conversationId;
+    if (conversationId !== undefined) {
+      setInternalConversationId(conversationId);
+    } else {
+      setInternalConversationId(undefined);
     }
+  }, [conversationId]);
 
-    // Set initial mute state from JS SDK
-    setIsMuted(clientRef.current.isMuted);
-    
-    // Connect to the agent
-    clientRef.current.connect().catch((error: Error) => {
-      console.error('Failed to connect to agent:', error);
-      onError?.(error);
-    });
+  const createClient = useCallback(
+    (initialConversationId: string | null) => {
+      console.log('Creating LayercodeClient instance');
+      const client = new LayercodeClient({
+        agentId,
+        conversationId: initialConversationId,
+        authorizeSessionEndpoint,
+        metadata,
+        onConnect: ({ conversationId }: { conversationId: string | null }) => {
+          setInternalConversationId((current) => {
+            if (conversationIdRef.current === undefined) {
+              return conversationId;
+            }
+            return conversationId ?? current ?? null;
+          });
+          onConnect?.({ conversationId });
+        },
+        onDisconnect: () => {
+          onDisconnect?.();
+        },
+        onError: (error: Error) => {
+          onError?.(error);
+        },
+        onDataMessage: (data: any) => {
+          onDataMessage?.(data);
+        },
+        onMessage: (data: any) => {
+          onMessage?.(data);
+        },
+        onStatusChange: (newStatus: string) => {
+          setStatus(newStatus);
+        },
+        onUserAmplitudeChange: (amplitude: number) => {
+          setUserAudioAmplitude(amplitude);
+        },
+        onAgentAmplitudeChange: (amplitude: number) => {
+          setAgentAudioAmplitude(amplitude);
+        },
+        onMuteStateChange: (muted: boolean) => {
+          setIsMuted(muted);
+          onMuteStateChange?.(muted);
+        },
+      });
 
-    // Cleanup function to disconnect when component unmounts
+      if (websocketUrlOverride) {
+        client._websocketUrl = websocketUrlOverride;
+      }
+
+      setIsMuted(client.isMuted);
+      clientRef.current = client;
+      return client;
+    },
+    [agentId, authorizeSessionEndpoint, metadata, onConnect, onDataMessage, onDisconnect, onError, onMessage, onMuteStateChange, websocketUrlOverride]
+  );
+
+  useEffect(() => {
     return () => {
       if (clientRef.current) {
         clientRef.current.disconnect();
+        clientRef.current = null;
       }
     };
-    // Add the internal override URL to the dependency array
-  }, [agentId, conversationId, authorizeSessionEndpoint]); // Make sure metadata isn't causing unnecessary re-renders if it changes often
+  }, []);
 
   // Class methods
   const mute = useCallback(() => {
@@ -114,12 +128,47 @@ const useLayercodeAgent = (
   const triggerUserTurnFinished = useCallback(() => {
     clientRef.current?.triggerUserTurnFinished();
   }, []);
-  const connect = useCallback(() => {
-    clientRef.current?.connect();
-  }, []);
-  const disconnect = useCallback(() => {
-    clientRef.current?.disconnect();
-  }, []);
+  const connect = useCallback(async () => {
+    if (clientRef.current) {
+      try {
+        await clientRef.current.disconnect();
+      } catch (error) {
+        console.error('Failed to disconnect existing client before reconnect:', error);
+      }
+      clientRef.current = null;
+    }
+
+    const nextConversationId =
+      conversationIdRef.current !== undefined
+        ? conversationIdRef.current
+        : internalConversationId ?? null;
+
+    const client = createClient(nextConversationId ?? null);
+
+    try {
+      await client.connect();
+    } catch (error) {
+      console.error('Failed to connect to agent:', error);
+      onError?.(error as Error);
+      throw error;
+    }
+  }, [createClient, internalConversationId, onError]);
+  const disconnect = useCallback(async () => {
+    if (!clientRef.current) {
+      return;
+    }
+
+    const client = clientRef.current;
+    clientRef.current = null;
+
+    try {
+      await client.disconnect();
+    } catch (error) {
+      console.error('Failed to disconnect from agent:', error);
+      onError?.(error as Error);
+      throw error;
+    }
+  }, [onError]);
 
   // Return methods and state
   return {
@@ -136,6 +185,7 @@ const useLayercodeAgent = (
     userAudioAmplitude,
     agentAudioAmplitude,
     isMuted,
+    conversationId: internalConversationId,
   };
 };
 
