@@ -138,10 +138,7 @@ const useLayercodeAgent = (
       clientRef.current = null;
     }
 
-    const nextConversationId =
-      conversationIdRef.current !== undefined
-        ? conversationIdRef.current
-        : internalConversationId ?? null;
+    const nextConversationId = conversationIdRef.current !== undefined ? conversationIdRef.current : internalConversationId ?? null;
 
     const client = createClient(nextConversationId ?? null);
 
