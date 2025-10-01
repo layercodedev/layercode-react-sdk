@@ -128,6 +128,9 @@ const useLayercodeAgent = (
   const triggerUserTurnFinished = useCallback(() => {
     clientRef.current?.triggerUserTurnFinished();
   }, []);
+  const sendClientResponseText = useCallback((text: string) => {
+    clientRef.current?.sendClientResponseText(text);
+  }, []);
   const connect = useCallback(async () => {
     if (clientRef.current) {
       try {
@@ -138,10 +141,7 @@ const useLayercodeAgent = (
       clientRef.current = null;
     }
 
-    const nextConversationId =
-      conversationIdRef.current !== undefined
-        ? conversationIdRef.current
-        : internalConversationId ?? null;
+    const nextConversationId = conversationIdRef.current !== undefined ? conversationIdRef.current : internalConversationId ?? null;
 
     const client = createClient(nextConversationId ?? null);
 
@@ -179,6 +179,7 @@ const useLayercodeAgent = (
     disconnect,
     mute,
     unmute,
+    sendClientResponseText,
 
     // State
     status,
