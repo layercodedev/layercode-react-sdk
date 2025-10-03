@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import LayercodeClient from '@layercode/js-sdk';
+import LayercodeClient, { type AgentConfig } from '@layercode/js-sdk';
 
 /**
  * Configuration options for the useLayercodeAgent hook.
@@ -9,7 +9,7 @@ interface UseLayercodeAgentOptions {
   conversationId?: string;
   authorizeSessionEndpoint: string;
   metadata?: Record<string, any>;
-  onConnect?: ({ conversationId }: { conversationId: string | null }) => void;
+  onConnect?: ({ conversationId, config }: { conversationId: string | null; config?: AgentConfig }) => void;
   onDisconnect?: () => void;
   onError?: (error: Error) => void;
   onDataMessage?: (data: any) => void;
@@ -57,14 +57,14 @@ const useLayercodeAgent = (
         conversationId: initialConversationId,
         authorizeSessionEndpoint,
         metadata,
-        onConnect: ({ conversationId }: { conversationId: string | null }) => {
+        onConnect: ({ conversationId, config }: { conversationId: string | null; config?: AgentConfig }) => {
           setInternalConversationId((current) => {
             if (conversationIdRef.current === undefined) {
               return conversationId;
             }
             return conversationId ?? current ?? null;
           });
-          onConnect?.({ conversationId });
+          onConnect?.({ conversationId, config });
         },
         onDisconnect: () => {
           onDisconnect?.();
