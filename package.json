@@ -2,7 +2,7 @@
   "author": "Layercode",
   "license": "MIT",
   "name": "@layercode/react-sdk",
-  "version": "2.1.8",
+  "version": "2.2.0",
   "description": "Layercode React SDK for integrating with React applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -33,7 +33,7 @@
     "react"
   ],
   "dependencies": {
-    "@layercode/js-sdk": "^2.1.7"
+    "@layercode/js-sdk": "^2.2.0"
   },
   "peerDependencies": {
     "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"

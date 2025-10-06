@@ -128,6 +128,9 @@ const useLayercodeAgent = (
   const triggerUserTurnFinished = useCallback(() => {
     clientRef.current?.triggerUserTurnFinished();
   }, []);
+  const sendClientResponseText = useCallback((text: string) => {
+    clientRef.current?.sendClientResponseText(text);
+  }, []);
   const connect = useCallback(async () => {
     if (clientRef.current) {
       try {
@@ -176,6 +179,7 @@ const useLayercodeAgent = (
     disconnect,
     mute,
     unmute,
+    sendClientResponseText,
 
     // State
     status,
