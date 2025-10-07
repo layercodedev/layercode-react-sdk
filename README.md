@@ -10,4 +10,4 @@ npm install @layercode/react-sdk
 
 ## Usage
 
-Read the docs: [https://docs.layercode.com/sdk-reference/react_sdk](https://docs.layercode.com/sdk-reference/react_sdk)
+Read the docs: [https://docs.layercode.com/sdk-reference/react-sdk](https://docs.layercode.com/sdk-reference/react-sdk)
