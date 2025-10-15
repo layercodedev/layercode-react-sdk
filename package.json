@@ -33,7 +33,7 @@
     "react"
   ],
   "dependencies": {
-    "@layercode/js-sdk": "file:../layercode-js-sdk"
+    "@layercode/js-sdk": "^2.3.1"
   },
   "peerDependencies": {
     "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
