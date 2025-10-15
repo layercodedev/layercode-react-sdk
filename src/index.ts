@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import LayercodeClient, { type AuthorizeSessionRequest } from '@layercode/js-sdk';
+import LayercodeClient, { type AgentConfig, type AuthorizeSessionRequest } from '@layercode/js-sdk';
 
 /**
  * Configuration options for the useLayercodeAgent hook.
@@ -10,7 +10,7 @@ interface UseLayercodeAgentOptions {
   authorizeSessionEndpoint: string;
   authorizeSessionRequest?: AuthorizeSessionRequest;
   metadata?: Record<string, any>;
-  onConnect?: ({ conversationId }: { conversationId: string | null }) => void;
+  onConnect?: ({ conversationId, config }: { conversationId: string | null; config?: AgentConfig }) => void;
   onDisconnect?: () => void;
   onError?: (error: Error) => void;
   onDataMessage?: (data: any) => void;
@@ -71,14 +71,14 @@ const useLayercodeAgent = (
         authorizeSessionEndpoint,
         authorizeSessionRequest,
         metadata,
-        onConnect: ({ conversationId }: { conversationId: string | null }) => {
+        onConnect: ({ conversationId, config }: { conversationId: string | null; config?: AgentConfig }) => {
           setInternalConversationId((current) => {
             if (conversationIdRef.current === undefined) {
               return conversationId;
             }
             return conversationId ?? current ?? null;
           });
-          onConnect?.({ conversationId });
+          onConnect?.({ conversationId, config });
         },
         onDisconnect: () => {
           onDisconnect?.();
@@ -154,6 +154,9 @@ const useLayercodeAgent = (
   const triggerUserTurnFinished = useCallback(() => {
     clientRef.current?.triggerUserTurnFinished();
   }, []);
+  const sendClientResponseText = useCallback((text: string) => {
+    clientRef.current?.sendClientResponseText(text);
+  }, []);
   const connect = useCallback(async () => {
     if (clientRef.current) {
       try {
@@ -164,10 +167,7 @@ const useLayercodeAgent = (
       clientRef.current = null;
     }
 
-    const nextConversationId =
-      conversationIdRef.current !== undefined
-        ? conversationIdRef.current
-        : internalConversationId ?? null;
+    const nextConversationId = conversationIdRef.current !== undefined ? conversationIdRef.current : internalConversationId ?? null;
 
     const client = createClient(nextConversationId ?? null);
 
@@ -205,6 +205,7 @@ const useLayercodeAgent = (
     disconnect,
     mute,
     unmute,
+    sendClientResponseText,
 
     // State
     status,
