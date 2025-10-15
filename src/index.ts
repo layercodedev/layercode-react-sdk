@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import LayercodeClient from '@layercode/js-sdk';
+import LayercodeClient, { type AuthorizeSessionRequest } from '@layercode/js-sdk';
 
 /**
  * Configuration options for the useLayercodeAgent hook.
@@ -8,6 +8,7 @@ interface UseLayercodeAgentOptions {
   agentId: string;
   conversationId?: string;
   authorizeSessionEndpoint: string;
+  authorizeSessionRequest?: AuthorizeSessionRequest;
   metadata?: Record<string, any>;
   onConnect?: ({ conversationId }: { conversationId: string | null }) => void;
   onDisconnect?: () => void;
@@ -28,7 +29,19 @@ const useLayercodeAgent = (
   options: UseLayercodeAgentOptions & Record<string, any>
 ) => {
   // Extract public options
-  const { agentId, conversationId, authorizeSessionEndpoint, metadata = {}, onConnect, onDisconnect, onError, onDataMessage, onMessage, onMuteStateChange } = options;
+  const {
+    agentId,
+    conversationId,
+    authorizeSessionEndpoint,
+    authorizeSessionRequest,
+    metadata = {},
+    onConnect,
+    onDisconnect,
+    onError,
+    onDataMessage,
+    onMessage,
+    onMuteStateChange,
+  } = options;
   const websocketUrlOverride = options['_websocketUrl'];
 
   const [status, setStatus] = useState('initializing');
@@ -56,6 +69,7 @@ const useLayercodeAgent = (
         agentId,
         conversationId: initialConversationId,
         authorizeSessionEndpoint,
+        authorizeSessionRequest,
         metadata,
         onConnect: ({ conversationId }: { conversationId: string | null }) => {
           setInternalConversationId((current) => {
@@ -101,7 +115,19 @@ const useLayercodeAgent = (
       clientRef.current = client;
       return client;
     },
-    [agentId, authorizeSessionEndpoint, metadata, onConnect, onDataMessage, onDisconnect, onError, onMessage, onMuteStateChange, websocketUrlOverride]
+    [
+      agentId,
+      authorizeSessionEndpoint,
+      authorizeSessionRequest,
+      metadata,
+      onConnect,
+      onDataMessage,
+      onDisconnect,
+      onError,
+      onMessage,
+      onMuteStateChange,
+      websocketUrlOverride,
+    ]
   );
 
   useEffect(() => {
