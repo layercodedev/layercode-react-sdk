@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import LayercodeClient, { type AgentConfig, type AuthorizeSessionRequest } from 'layercode-js-sdk';
+import LayercodeClient, { type AgentConfig, type AuthorizeSessionRequest } from '@layercode/js-sdk';
 
 /**
  * Configuration options for the useLayercodeAgent hook.
