@@ -213,6 +213,9 @@ const useLayercodeAgent = (
   const sendClientResponseText = useCallback((text: string) => {
     clientRef.current?.sendClientResponseText(text);
   }, []);
+  const sendClientResponseData = useCallback((text: string) => {
+    clientRef.current?.sendClientResponseData(text);
+  }, []);
   const connect = useCallback(async () => {
     if (clientRef.current) {
       try {
@@ -262,6 +265,7 @@ const useLayercodeAgent = (
     mute,
     unmute,
     sendClientResponseText,
+    sendClientResponseData,
 
     setAudioInput,
 
