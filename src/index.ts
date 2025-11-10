@@ -20,7 +20,9 @@ interface UseLayercodeAgentOptions {
   onAgentSpeakingChange?: (isSpeaking: boolean) => void;
 
   audioInput?: boolean;
+  audioOutput?: boolean;
   onAudioInputChanged?: (audioInput: boolean) => void;
+  onAudioOutputChanged?: (audioOutput: boolean) => void;
   enableAmplitudeMonitoring?: boolean;
 }
 
@@ -50,6 +52,7 @@ const useLayercodeAgent = (
     onUserSpeakingChange,
     onAgentSpeakingChange,
     onAudioInputChanged,
+    onAudioOutputChanged,
   } = options;
   const websocketUrlOverride = options['_websocketUrl'];
   const enableAmplitudeMonitoring = options.enableAmplitudeMonitoring ?? true;
@@ -60,6 +63,7 @@ const useLayercodeAgent = (
   const [userSpeaking, setUserSpeaking] = useState(false);
   const [agentSpeaking, setAgentSpeaking] = useState(false);
   const [audioInput, _setAudioInput] = useState<boolean>(options.audioInput ?? true);
+  const [audioOutput, _setAudioOutput] = useState<boolean>(options.audioOutput ?? true);
   const [isMuted, setIsMuted] = useState(false);
   const [internalConversationId, setInternalConversationId] = useState<string | null | undefined>(conversationId);
   const conversationIdRef = useRef<string | undefined>(conversationId);
@@ -92,9 +96,14 @@ const useLayercodeAgent = (
         authorizeSessionRequest,
         metadata,
         audioInput,
+        audioOutput,
         audioInputChanged: (next: boolean) => {
           _setAudioInput(next);
           onAudioInputChanged?.(next);
+        },
+        audioOutputChanged: (next: boolean) => {
+          _setAudioOutput(next);
+          onAudioOutputChanged?.(next);
         },
         onConnect: ({ conversationId, config }: { conversationId: string | null; config?: AgentConfig }) => {
           setInternalConversationId((current) => {
@@ -172,7 +181,9 @@ const useLayercodeAgent = (
       onAgentSpeakingChange,
       onAudioInputChanged,
       websocketUrlOverride,
+      onAudioOutputChanged,
       audioInput,
+      audioOutput,
       enableAmplitudeMonitoring,
     ]
   );
@@ -202,6 +213,15 @@ const useLayercodeAgent = (
       clientRef.current?.setAudioInput(next);
     },
     [_setAudioInput, clientRef, audioInput]
+  );
+
+  const setAudioOutput = useCallback(
+    (state: React.SetStateAction<boolean>) => {
+      _setAudioOutput(state);
+      const next = typeof state === 'function' ? (state as (prev: boolean) => boolean)(audioOutput) : state;
+      clientRef.current?.setAudioOutput(next);
+    },
+    [_setAudioOutput, clientRef, audioOutput]
   );
 
   const triggerUserTurnStarted = useCallback(() => {
@@ -268,6 +288,7 @@ const useLayercodeAgent = (
     sendClientResponseData,
 
     setAudioInput,
+    setAudioOutput,
 
     // State
     status,
@@ -278,6 +299,7 @@ const useLayercodeAgent = (
     isMuted,
     conversationId: internalConversationId,
     audioInput,
+    audioOutput,
   };
 };
 
