@@ -2,7 +2,7 @@
   "author": "Layercode",
   "license": "MIT",
   "name": "@layercode/react-sdk",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Layercode React SDK for integrating with React applications",
   "type": "module",
   "main": "./dist/index.js",
