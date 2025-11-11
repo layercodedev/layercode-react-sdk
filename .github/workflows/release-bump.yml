@@ -1,0 +1,124 @@
+name: Release & Bump JS SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New semver version (e.g., 1.2.3)'
+        required: true
+        type: string
+      js_sdk_version:
+        description: 'Version to pin for @layercode/js-sdk (e.g., 2.5.0)'
+        required: true
+        type: string
+      npm_tag:
+        description: 'npm dist-tag to publish under (e.g., latest, next)'
+        required: false
+        type: string
+        default: latest
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Configure git early so the bump step can commit if needed
+      - name: Configure Git (early)
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      # EXTRA: bump @layercode/js-sdk to requested version, commit only if it changed
+      - name: Bump @layercode/js-sdk
+        id: bump_js_sdk
+        run: |
+          set -euo pipefail
+          JS_SDK_VERSION="${{ github.event.inputs.js_sdk_version }}"
+          echo "Target @layercode/js-sdk version: ${JS_SDK_VERSION}"
+
+          npm i @layercode/js-sdk@"${JS_SDK_VERSION}" --save-exact
+
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No dependency change detected — skipping release."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git add package.json package-lock.json
+            git commit -m "chore: bump @layercode/js-sdk to ${JS_SDK_VERSION}"
+          fi
+
+      # If nothing changed from the bump, exit early (no release)
+      - name: Stop if no changes from bump
+        if: steps.bump_js_sdk.outputs.changed == 'false'
+        run: |
+          echo "No changes detected. Exiting without release."
+          exit 0
+
+      - name: Update package.json version
+        run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+      # Build before tagging/publishing so broken builds never ship
+      - name: Build package
+        run: npm run build
+
+      # (Optional duplicate config; harmless if you want to keep original style)
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Commit and push changes
+        run: |
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Nothing to commit after version bump."
+          else
+            git commit -m "chore: release v${{ github.event.inputs.version }}"
+          fi
+          git push origin main
+
+      - name: Create Git tag
+        run: |
+          TAG="v${{ github.event.inputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists — skipping create."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "Publishing to npm with tag '${{ github.event.inputs.npm_tag }}'..."
+          npm publish --access public --tag "${{ github.event.inputs.npm_tag }}"
+          echo "✅ Published successfully."
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          release_name: Release v${{ github.event.inputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
