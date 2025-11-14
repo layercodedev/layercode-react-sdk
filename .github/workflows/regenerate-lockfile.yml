@@ -1,0 +1,57 @@
+name: Regenerate Lockfile
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to update'
+        required: false
+        default: 'main'
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Remove existing lockfile
+        run: rm -rf node_modules package-lock.json
+
+      - name: Generate Linux-friendly lockfile
+        run: npm install --ignore-scripts
+
+      - name: Configure Git author
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Commit lockfile
+        id: commit
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes detected"
+          else
+            git add package-lock.json
+            git commit -m "chore: regenerate package-lock on Linux"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push changes
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          BRANCH: ${{ github.event.inputs.branch }}
+        run: git push origin HEAD:${BRANCH}
