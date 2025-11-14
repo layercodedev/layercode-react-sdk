@@ -5,7 +5,7 @@ import typescript from "@rollup/plugin-typescript";
 export default [
   // ESM build
   {
-    input: "src/index.ts",
+    input: "src/index.tsx",
     output: {
       file: "dist/index.js",
       format: "esm",
