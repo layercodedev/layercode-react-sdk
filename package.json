@@ -39,7 +39,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@layercode/js-sdk": "2.8.1"
+    "@layercode/js-sdk": "2.8.2"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.8",
