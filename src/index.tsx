@@ -309,8 +309,8 @@ const useLayercodeAgent = (
     clientRef.current?.mute();
   }, []);
 
-  const unmute = useCallback(() => {
-    clientRef.current?.unmute();
+  const unmute = useCallback(async () => {
+    await clientRef.current?.unmute();
   }, []);
 
   const setAudioInput = useCallback(
