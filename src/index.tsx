@@ -148,17 +148,21 @@ const useLayercodeAgent = (
   }, [preferredInputDeviceId]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    // Only refresh input devices if audioInput is enabled
+    // This prevents requesting microphone permissions when audio is disabled
+    if (typeof window === 'undefined' || !audioInput) {
       return;
     }
 
     refreshInputDevices().catch((error) => {
       console.warn('Layercode: failed to load microphone devices', error);
     });
-  }, [refreshInputDevices]);
+  }, [refreshInputDevices, audioInput]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    // Only watch for device changes if audioInput is enabled
+    // This prevents requesting microphone permissions when audio is disabled
+    if (typeof window === 'undefined' || typeof navigator === 'undefined' || !audioInput) {
       return;
     }
 
@@ -176,11 +180,11 @@ const useLayercodeAgent = (
     return () => {
       unsubscribe?.();
     };
-  }, []);
+  }, [audioInput]);
 
   const createClient = useCallback(
     (initialConversationId: string | null) => {
-      console.log('Creating LayercodeClient instance');
+      console.log('Creating LayercodeClient instance with audioInput:', audioInput, 'audioOutput:', audioOutput);
       const client = new LayercodeClient({
         agentId,
         conversationId: initialConversationId,
@@ -310,19 +314,19 @@ const useLayercodeAgent = (
   }, []);
 
   const setAudioInput = useCallback(
-    (state: React.SetStateAction<boolean>) => {
+    async (state: React.SetStateAction<boolean>) => {
       _setAudioInput(state);
       const next = typeof state === 'function' ? (state as (prev: boolean) => boolean)(audioInput) : state;
-      clientRef.current?.setAudioInput(next);
+      await clientRef.current?.setAudioInput(next);
     },
     [_setAudioInput, clientRef, audioInput]
   );
 
   const setAudioOutput = useCallback(
-    (state: React.SetStateAction<boolean>) => {
+    async (state: React.SetStateAction<boolean>) => {
       _setAudioOutput(state);
       const next = typeof state === 'function' ? (state as (prev: boolean) => boolean)(audioOutput) : state;
-      clientRef.current?.setAudioOutput(next);
+      await clientRef.current?.setAudioOutput(next);
     },
     [_setAudioOutput, clientRef, audioOutput]
   );
