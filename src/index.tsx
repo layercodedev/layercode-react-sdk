@@ -24,6 +24,11 @@ interface UseLayercodeAgentOptions {
   onAudioInputChanged?: (audioInput: boolean) => void;
   onAudioOutputChanged?: (audioOutput: boolean) => void;
   enableAmplitudeMonitoring?: boolean;
+  /**
+   * When false, skips microphone device enumeration/watchers until audio input is enabled.
+   * This prevents getUserMedia from being invoked before the user opts into voice mode.
+   */
+  autoLoadInputDevices?: boolean;
 }
 
 const normalizeDeviceId = (deviceId?: string | null): string | null => {
@@ -63,6 +68,7 @@ const useLayercodeAgent = (
   } = options;
   const websocketUrlOverride = options['_websocketUrl'];
   const enableAmplitudeMonitoring = options.enableAmplitudeMonitoring ?? true;
+  const autoLoadInputDevices = options.autoLoadInputDevices ?? true;
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
@@ -83,6 +89,7 @@ const useLayercodeAgent = (
   const mountedRef = useRef(true);
   // Reference to the LayercodeClient instance
   const clientRef = useRef<LayercodeClient | null>(null);
+  const shouldManageInputDevices = autoLoadInputDevices || audioInput;
 
   const refreshInputDevices = useCallback(async () => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -148,21 +155,17 @@ const useLayercodeAgent = (
   }, [preferredInputDeviceId]);
 
   useEffect(() => {
-    // Only refresh input devices if audioInput is enabled
-    // This prevents requesting microphone permissions when audio is disabled
-    if (typeof window === 'undefined' || !audioInput) {
+    if (typeof window === 'undefined' || !shouldManageInputDevices) {
       return;
     }
 
     refreshInputDevices().catch((error) => {
       console.warn('Layercode: failed to load microphone devices', error);
     });
-  }, [refreshInputDevices, audioInput]);
+  }, [refreshInputDevices, shouldManageInputDevices]);
 
   useEffect(() => {
-    // Only watch for device changes if audioInput is enabled
-    // This prevents requesting microphone permissions when audio is disabled
-    if (typeof window === 'undefined' || typeof navigator === 'undefined' || !audioInput) {
+    if (!shouldManageInputDevices || typeof window === 'undefined' || typeof navigator === 'undefined') {
       return;
     }
 
@@ -180,7 +183,7 @@ const useLayercodeAgent = (
     return () => {
       unsubscribe?.();
     };
-  }, [audioInput]);
+  }, [shouldManageInputDevices]);
 
   const createClient = useCallback(
     (initialConversationId: string | null) => {
