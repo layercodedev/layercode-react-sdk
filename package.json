@@ -2,7 +2,7 @@
   "author": "Layercode",
   "license": "MIT",
   "name": "@layercode/react-sdk",
-  "version": "2.8.2",
+  "version": "2.8.3",
   "description": "Layercode React SDK for integrating with React applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -39,7 +39,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@layercode/js-sdk": "2.8.2"
+    "@layercode/js-sdk": "^2.8.4"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.8",

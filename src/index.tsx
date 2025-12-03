@@ -24,6 +24,11 @@ interface UseLayercodeAgentOptions {
   onAudioInputChanged?: (audioInput: boolean) => void;
   onAudioOutputChanged?: (audioOutput: boolean) => void;
   enableAmplitudeMonitoring?: boolean;
+  /**
+   * When false, skips microphone device enumeration/watchers until audio input is enabled.
+   * This prevents getUserMedia from being invoked before the user opts into voice mode.
+   */
+  autoLoadInputDevices?: boolean;
 }
 
 const normalizeDeviceId = (deviceId?: string | null): string | null => {
@@ -63,6 +68,7 @@ const useLayercodeAgent = (
   } = options;
   const websocketUrlOverride = options['_websocketUrl'];
   const enableAmplitudeMonitoring = options.enableAmplitudeMonitoring ?? true;
+  const autoLoadInputDevices = options.autoLoadInputDevices ?? true;
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
@@ -83,6 +89,7 @@ const useLayercodeAgent = (
   const mountedRef = useRef(true);
   // Reference to the LayercodeClient instance
   const clientRef = useRef<LayercodeClient | null>(null);
+  const shouldManageInputDevices = autoLoadInputDevices || audioInput;
 
   const refreshInputDevices = useCallback(async () => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -148,17 +155,17 @@ const useLayercodeAgent = (
   }, [preferredInputDeviceId]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !shouldManageInputDevices) {
       return;
     }
 
     refreshInputDevices().catch((error) => {
       console.warn('Layercode: failed to load microphone devices', error);
     });
-  }, [refreshInputDevices]);
+  }, [refreshInputDevices, shouldManageInputDevices]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    if (!shouldManageInputDevices || typeof window === 'undefined' || typeof navigator === 'undefined') {
       return;
     }
 
@@ -176,11 +183,11 @@ const useLayercodeAgent = (
     return () => {
       unsubscribe?.();
     };
-  }, []);
+  }, [shouldManageInputDevices]);
 
   const createClient = useCallback(
     (initialConversationId: string | null) => {
-      console.log('Creating LayercodeClient instance');
+      console.log('Creating LayercodeClient instance with audioInput:', audioInput, 'audioOutput:', audioOutput);
       const client = new LayercodeClient({
         agentId,
         conversationId: initialConversationId,
@@ -310,19 +317,19 @@ const useLayercodeAgent = (
   }, []);
 
   const setAudioInput = useCallback(
-    (state: React.SetStateAction<boolean>) => {
+    async (state: React.SetStateAction<boolean>) => {
       _setAudioInput(state);
       const next = typeof state === 'function' ? (state as (prev: boolean) => boolean)(audioInput) : state;
-      clientRef.current?.setAudioInput(next);
+      await clientRef.current?.setAudioInput(next);
     },
     [_setAudioInput, clientRef, audioInput]
   );
 
   const setAudioOutput = useCallback(
-    (state: React.SetStateAction<boolean>) => {
+    async (state: React.SetStateAction<boolean>) => {
       _setAudioOutput(state);
       const next = typeof state === 'function' ? (state as (prev: boolean) => boolean)(audioOutput) : state;
-      clientRef.current?.setAudioOutput(next);
+      await clientRef.current?.setAudioOutput(next);
     },
     [_setAudioOutput, clientRef, audioOutput]
   );
