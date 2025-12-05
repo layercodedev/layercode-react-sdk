@@ -98,7 +98,7 @@ const useLayercodeAgent = (
 
     setIsInputDeviceListLoading(true);
     try {
-      const devices = await listAudioInputDevices();
+      const devices = await listAudioInputDevices({ requestPermission: false });
       if (!mountedRef.current) {
         return devices;
       }
@@ -321,8 +321,15 @@ const useLayercodeAgent = (
       _setAudioInput(state);
       const next = typeof state === 'function' ? (state as (prev: boolean) => boolean)(audioInput) : state;
       await clientRef.current?.setAudioInput(next);
+
+      // After the mic is enabled (permission granted), refresh device labels without prompting again.
+      if (next) {
+        refreshInputDevices().catch((error) => {
+          console.warn('Layercode: failed to refresh microphones after enabling audio input', error);
+        });
+      }
     },
-    [_setAudioInput, clientRef, audioInput]
+    [_setAudioInput, clientRef, audioInput, refreshInputDevices]
   );
 
   const setAudioOutput = useCallback(
@@ -382,12 +389,18 @@ const useLayercodeAgent = (
     try {
       await client.setPreferredInputDevice(preferredInputDeviceRef.current);
       await client.connect();
+
+      if (client.audioInputEnabled) {
+        refreshInputDevices().catch((error) => {
+          console.warn('Layercode: failed to refresh microphones after connect', error);
+        });
+      }
     } catch (error) {
       console.error('Failed to connect to agent:', error);
       onError?.(error as Error);
       throw error;
     }
-  }, [createClient, internalConversationId, onError]);
+  }, [createClient, internalConversationId, onError, refreshInputDevices]);
   const disconnect = useCallback(async () => {
     if (!clientRef.current) {
       return;
