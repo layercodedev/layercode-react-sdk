@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import LayercodeClient, { type AgentConfig, type AuthorizeSessionRequest, type LayercodeAudioInputDevice, listAudioInputDevices, watchAudioInputDevices } from 'layercode-js-sdk';
+import LayercodeClient, { type AgentConfig, type AuthorizeSessionRequest, type LayercodeAudioInputDevice, listAudioInputDevices, watchAudioInputDevices } from '@layercode/js-sdk';
 
 /**
  * Configuration options for the useLayercodeAgent hook.
