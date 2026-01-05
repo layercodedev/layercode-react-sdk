@@ -21,6 +21,7 @@ interface UseLayercodeAgentOptions {
 
   audioInput?: boolean;
   audioOutput?: boolean;
+  enableVAD?: boolean;
   onAudioInputChanged?: (audioInput: boolean) => void;
   onAudioOutputChanged?: (audioOutput: boolean) => void;
   enableAmplitudeMonitoring?: boolean;
@@ -69,6 +70,7 @@ const useLayercodeAgent = (
   const websocketUrlOverride = options['_websocketUrl'];
   const enableAmplitudeMonitoring = options.enableAmplitudeMonitoring ?? true;
   const autoLoadInputDevices = options.autoLoadInputDevices ?? true;
+  const enableVAD = options.enableVAD ?? true;
 
   const [status, setStatus] = useState('initializing');
   const [userAudioAmplitude, setUserAudioAmplitude] = useState(0);
@@ -196,6 +198,7 @@ const useLayercodeAgent = (
         metadata,
         audioInput,
         audioOutput,
+        enableVAD,
         audioInputChanged: (next: boolean) => {
           _setAudioInput(next);
           onAudioInputChanged?.(next);
@@ -294,6 +297,7 @@ const useLayercodeAgent = (
       onAudioOutputChanged,
       audioInput,
       audioOutput,
+      enableVAD,
       enableAmplitudeMonitoring,
     ]
   );
@@ -329,7 +333,7 @@ const useLayercodeAgent = (
         });
       }
     },
-    [_setAudioInput, clientRef, audioInput, refreshInputDevices]
+    [_setAudioInput, clientRef, audioInput, refreshInputDevices, enableVAD]
   );
 
   const setAudioOutput = useCallback(
@@ -445,6 +449,7 @@ const useLayercodeAgent = (
     conversationId: internalConversationId,
     audioInput,
     audioOutput,
+    enableVAD,
     availableInputDevices,
     activeInputDeviceId,
     preferredInputDeviceId,
