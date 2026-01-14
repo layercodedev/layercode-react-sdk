@@ -313,11 +313,19 @@ const useLayercodeAgent = (
 
   // Class methods
   const mute = useCallback(() => {
-    clientRef.current?.mute();
+    if (!clientRef.current) {
+      console.warn('[Layercode] mute() called but no client exists. Did you call connect() first?');
+      return;
+    }
+    clientRef.current.mute();
   }, []);
 
   const unmute = useCallback(() => {
-    clientRef.current?.unmute();
+    if (!clientRef.current) {
+      console.warn('[Layercode] unmute() called but no client exists. Did you call connect() first?');
+      return;
+    }
+    clientRef.current.unmute();
   }, []);
 
   const setAudioInput = useCallback(
@@ -407,6 +415,7 @@ const useLayercodeAgent = (
   }, [createClient, internalConversationId, onError, refreshInputDevices]);
   const disconnect = useCallback(async () => {
     if (!clientRef.current) {
+      console.warn('[Layercode] disconnect() called but no client exists');
       return;
     }
 
@@ -417,10 +426,9 @@ const useLayercodeAgent = (
       await client.disconnect();
     } catch (error) {
       console.error('Failed to disconnect from agent:', error);
-      onError?.(error as Error);
       throw error;
     }
-  }, [onError]);
+  }, []);
 
   // Return methods and state
   return {
