@@ -320,12 +320,12 @@ const useLayercodeAgent = (
     clientRef.current.mute();
   }, []);
 
-  const unmute = useCallback(() => {
+  const unmute = useCallback(async () => {
     if (!clientRef.current) {
       console.warn('[Layercode] unmute() called but no client exists. Did you call connect() first?');
       return;
     }
-    clientRef.current.unmute();
+    await clientRef.current.unmute();
   }, []);
 
   const setAudioInput = useCallback(
