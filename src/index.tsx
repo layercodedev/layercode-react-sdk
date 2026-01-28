@@ -381,8 +381,8 @@ const useLayercodeAgent = (
   const sendClientResponseText = useCallback((text: string) => {
     clientRef.current?.sendClientResponseText(text);
   }, []);
-  const sendClientResponseData = useCallback((text: string) => {
-    clientRef.current?.sendClientResponseData(text);
+  const sendClientResponseData = useCallback((data: any) => {
+    clientRef.current?.sendClientResponseData(data);
   }, []);
   const connect = useCallback(async () => {
     if (clientRef.current) {
@@ -394,7 +394,7 @@ const useLayercodeAgent = (
       clientRef.current = null;
     }
 
-    const nextConversationId = conversationIdRef.current !== undefined ? conversationIdRef.current : internalConversationId ?? null;
+    const nextConversationId = conversationIdRef.current !== undefined ? conversationIdRef.current : (internalConversationId ?? null);
 
     const client = createClient(nextConversationId ?? null);
 
